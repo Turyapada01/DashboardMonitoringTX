@@ -3,41 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dasbor Multi-Sheet dengan Filter Waktu</title>
+    <title>Dashboard Monitoring TX Turyapada</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       body {
         font-family: "Inter", sans-serif;
-        background-color: #111827;
-        color: #e5e7eb;
+        background-color: #111827; 
+        color: #e5e7eb; 
       }
       .chart-container {
-        background-color: #1f2937;
-        border-radius: 0.75rem;
+        background-color: #1f2937; 
+        border-radius: 0.75rem; 
         padding: 1rem;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        height: 350px; /* Sedikit menambah tinggi untuk filter */
+        height: 350px; 
         display: flex;
         flex-direction: column;
-      }
-      .kpi-card {
-        background-color: #1f2937;
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        text-align: center;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      }
-      .kpi-value {
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: #34d399;
-      }
-      .kpi-label {
-        font-size: 0.875rem;
-        color: #9ca3af;
-        margin-top: 0.5rem;
       }
       .chart-title {
         font-size: 1.125rem;
@@ -60,13 +43,13 @@
       .status-dot {
         height: 10px;
         width: 10px;
-        background-color: #f87171;
+        background-color: #f87171; 
         border-radius: 50%;
         display: inline-block;
         margin-right: 8px;
       }
       .status-dot.online {
-        background-color: #34d399;
+        background-color: #34d399; 
       }
       .status-text {
         font-size: 0.875rem;
@@ -104,6 +87,12 @@
       .filter-container button:hover {
         background-color: #4b5563;
       }
+      #messageArea {
+        min-height: 1.5rem; 
+        transition: opacity 0.5s ease-in-out;
+        margin-bottom: 1.5rem; 
+        text-align: center;
+      }
     </style>
   </head>
   <body class="p-4 sm:p-6">
@@ -125,22 +114,21 @@
       <button id="resetFilterButton">Reset</button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      <div class="kpi-card">
-        <div class="kpi-value" id="forwardPowerValue">--- <span class="text-xl font-medium text-gray-400">W</span></div>
-        <div class="kpi-label">Forward Power</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value" id="reflectedPowerValue">--- <span class="text-xl font-medium text-gray-400">W</span></div>
-        <div class="kpi-label">Reflected Power</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value" id="percentagePowerValue">--- <span class="text-xl font-medium text-gray-400">%</span></div>
-        <div class="kpi-label">Percentage Power</div>
-      </div>
-    </div>
+    <div id="messageArea"></div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="chart-container">
+        <h2 class="chart-title">Forward Power (berdasarkan Local Submitted Time)</h2>
+        <div class="canvas-wrapper"><canvas id="forwardPowerChart"></canvas></div>
+      </div>
+      <div class="chart-container">
+        <h2 class="chart-title">Reflected Power (berdasarkan Local Submitted Time)</h2>
+        <div class="canvas-wrapper"><canvas id="reflectedPowerChart"></canvas></div>
+      </div>
+      <div class="chart-container">
+        <h2 class="chart-title">Percentage Power (berdasarkan Local Submitted Time)</h2>
+        <div class="canvas-wrapper"><canvas id="percentagePowerChart"></canvas></div>
+      </div>
       <div class="chart-container">
         <h2 class="chart-title">Voltage Output (berdasarkan Local Submitted Time)</h2>
         <div class="canvas-wrapper"><canvas id="voltageChart"></canvas></div>
@@ -149,7 +137,7 @@
         <h2 class="chart-title">Kelembapan (berdasarkan Local Submitted Time)</h2>
         <div class="canvas-wrapper"><canvas id="humidityChart"></canvas></div>
       </div>
-      <div class="chart-container md:col-span-2">
+      <div class="chart-container">
         <h2 class="chart-title">Suhu (berdasarkan Local Submitted Time)</h2>
         <div class="canvas-wrapper"><canvas id="temperatureChart"></canvas></div>
       </div>
@@ -158,32 +146,32 @@
     <script>
       // --- KONFIGURASI DASBOR ---
       const BASE_GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTNwcNOcACzp9Gyagna13n5WfjYMVfWCG-LbtgZx9u0naWJCbbRzZhd9Pv4preznjF5CGS3UyL1wvyc/pub?output=csv";
-      const KPI_SHEET_URL = `${BASE_GOOGLE_SHEET_URL}&gid=0`;
+      const KPI_SHEET_URL = `${BASE_GOOGLE_SHEET_URL}&gid=0`; 
       const VOLTAGE_SHEET_URL = `${BASE_GOOGLE_SHEET_URL}&gid=364868846`;
       const ENVIRONMENT_SHEET_URL = `${BASE_GOOGLE_SHEET_URL}&gid=103977797`;
-      const DEFAULT_DISPLAY_POINTS = 10; // Jumlah titik data yang ditampilkan secara default atau setelah reset
+      const DEFAULT_DISPLAY_POINTS = 10; 
       const UPDATE_INTERVAL_MS = 300000;
 
       // --- ELEMEN UI ---
       const statusDotElement = document.getElementById("statusDot");
       const statusTextElement = document.getElementById("statusText");
       const lastUpdatedElement = document.getElementById("lastUpdated");
-      const forwardPowerValueElement = document.getElementById("forwardPowerValue");
-      const reflectedPowerValueElement = document.getElementById("reflectedPowerValue");
-      const percentagePowerValueElement = document.getElementById("percentagePowerValue");
       const startDateFilterElement = document.getElementById("startDateFilter");
       const endDateFilterElement = document.getElementById("endDateFilter");
       const applyFilterButtonElement = document.getElementById("applyFilterButton");
       const resetFilterButtonElement = document.getElementById("resetFilterButton");
+      const messageAreaElement = document.getElementById("messageArea");
 
       // --- PENYIMPANAN DATA ASLI UNTUK FILTER ---
+      let originalFpChartData = []; 
+      let originalRpChartData = []; 
+      let originalPpChartData = []; 
       let originalVoltageData = [];
       let originalEnvironmentData = [];
 
       // --- INISIALISASI GRAFIK ---
-      let voltageChart, humidityChart, temperatureChart;
+      let forwardPowerChart, reflectedPowerChart, percentagePowerChart, voltageChart, humidityChart, temperatureChart;
 
-      // Definisikan commonChartOptions secara lengkap di sini
       const commonChartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -196,7 +184,7 @@
           y: {
             ticks: { color: "#9ca3af", maxTicksLimit: 5 },
             grid: { color: "rgba(156,163,175,0.1)" },
-            beginAtZero: false,
+            beginAtZero: false, 
           },
         },
         plugins: { legend: { position: "top", labels: { color: "#d1d5db", boxWidth: 10, padding: 8, font: { size: 10 } } } },
@@ -205,40 +193,69 @@
 
       function initializeCharts() {
         const initialEmptyData = { labels: ["Memuat..."], datasets: [] };
-        const commonOptsCopy = JSON.parse(JSON.stringify(commonChartOptions));
+        
+        let fpOptions = JSON.parse(JSON.stringify(commonChartOptions));
+        if (!fpOptions.scales.y.title) fpOptions.scales.y.title = {};
+        fpOptions.scales.y.title.display = true;
+        fpOptions.scales.y.title.text = "Forward Power (W)";
+        fpOptions.scales.y.title.color = "#9ca3af";
+        forwardPowerChart = new Chart(document.getElementById("forwardPowerChart").getContext("2d"), { 
+            type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: fpOptions 
+        });
 
-        voltageChart = new Chart(document.getElementById("voltageChart").getContext("2d"), { type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: commonOptsCopy });
+        let rpOptions = JSON.parse(JSON.stringify(commonChartOptions));
+        if (!rpOptions.scales.y.title) rpOptions.scales.y.title = {};
+        rpOptions.scales.y.title.display = true;
+        rpOptions.scales.y.title.text = "Reflected Power (W)";
+        rpOptions.scales.y.title.color = "#9ca3af";
+        reflectedPowerChart = new Chart(document.getElementById("reflectedPowerChart").getContext("2d"), { 
+            type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: rpOptions 
+        });
 
-        let humidityOptions = JSON.parse(JSON.stringify(commonOptsCopy));
+        let ppOptions = JSON.parse(JSON.stringify(commonChartOptions));
+        if (!ppOptions.scales.y.title) ppOptions.scales.y.title = {};
+        ppOptions.scales.y.title.display = true;
+        ppOptions.scales.y.title.text = "Percentage Power (%)";
+        ppOptions.scales.y.title.color = "#9ca3af";
+        ppOptions.scales.y.min = 0; 
+        ppOptions.scales.y.max = 100;
+        percentagePowerChart = new Chart(document.getElementById("percentagePowerChart").getContext("2d"), { 
+            type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: ppOptions 
+        });
+        
+        voltageChart = new Chart(document.getElementById("voltageChart").getContext("2d"), { 
+            type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: JSON.parse(JSON.stringify(commonChartOptions)) 
+        });
+
+        let humidityOptions = JSON.parse(JSON.stringify(commonChartOptions));
         if (!humidityOptions.scales.y.title) humidityOptions.scales.y.title = {};
-        humidityOptions.scales.y.min = 30;
-        humidityOptions.scales.y.max = 100;
+        humidityOptions.scales.y.min = 30; humidityOptions.scales.y.max = 100;
         humidityOptions.scales.y.title.display = true;
         humidityOptions.scales.y.title.text = "Kelembapan (%)";
         humidityOptions.scales.y.title.color = "#9ca3af";
-        humidityChart = new Chart(document.getElementById("humidityChart").getContext("2d"), { type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: humidityOptions });
+        humidityChart = new Chart(document.getElementById("humidityChart").getContext("2d"), { 
+            type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: humidityOptions 
+        });
 
-        let temperatureOptions = JSON.parse(JSON.stringify(commonOptsCopy));
+        let temperatureOptions = JSON.parse(JSON.stringify(commonChartOptions));
         if (!temperatureOptions.scales.y.title) temperatureOptions.scales.y.title = {};
-        temperatureOptions.scales.y.min = 15;
-        temperatureOptions.scales.y.max = 45;
+        temperatureOptions.scales.y.min = 15; temperatureOptions.scales.y.max = 45;
         temperatureOptions.scales.y.title.display = true;
         temperatureOptions.scales.y.title.text = "Suhu (°C)";
         temperatureOptions.scales.y.title.color = "#9ca3af";
-        temperatureChart = new Chart(document.getElementById("temperatureChart").getContext("2d"), { type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: temperatureOptions });
+        temperatureChart = new Chart(document.getElementById("temperatureChart").getContext("2d"), { 
+            type: "line", data: JSON.parse(JSON.stringify(initialEmptyData)), options: temperatureOptions 
+        });
       }
 
-      // --- FUNGSI PARSING TANGGAL DARI STRING ---
       function parseDateFromString(dateString) {
         if (!dateString || typeof dateString !== "string") return null;
         const dateTimeParts = dateString.split(" ");
         const dateParts = dateTimeParts[0].split("/");
-
         if (dateParts.length === 3) {
           const day = parseInt(dateParts[0], 10);
           const month = parseInt(dateParts[1], 10) - 1;
           const year = parseInt(dateParts[2], 10);
-
           if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
             if (dateTimeParts.length > 1) {
               const timeParts = dateTimeParts[1].split(":");
@@ -256,53 +273,62 @@
         }
         const d = new Date(dateString);
         if (!isNaN(d.getTime())) return d;
-        console.warn(`Format tanggal tidak dikenali atau tidak valid: "${dateString}"`);
         return null;
       }
-
-      // --- FUNGSI PARSING SPESIFIK ---
-      function getMostFrequentValue(arr) {
-        if (!arr || arr.length === 0) return null;
-        const frequencyMap = arr.reduce((acc, val) => {
-          acc[val] = (acc[val] || 0) + 1;
-          return acc;
-        }, {});
-        let mostFrequentKey = null;
-        let maxCount = 0;
-        for (const valKey in frequencyMap) {
-          if (frequencyMap[valKey] > maxCount) {
-            maxCount = frequencyMap[valKey];
-            mostFrequentKey = valKey;
-          }
+      
+      function displayMessage(message, isError = false) {
+        messageAreaElement.textContent = message;
+        messageAreaElement.className = `text-center ${isError ? 'text-red-500' : 'text-yellow-400'}`;
+        if (message) {
+            setTimeout(() => { 
+                messageAreaElement.textContent = ""; 
+                messageAreaElement.className = "text-center text-yellow-400"; 
+            }, 5000);
         }
-        if (mostFrequentKey !== null && !isNaN(parseFloat(mostFrequentKey)) && isFinite(mostFrequentKey)) {
-          return parseFloat(mostFrequentKey);
-        }
-        return mostFrequentKey;
       }
 
-      function parseKpiData(csvLines) {
-        if (!csvLines || csvLines.length < 1) return null;
-        const forwardPowers = [],
-          reflectedPowers = [],
-          percentagePowers = [];
-        for (const line of csvLines) {
+      function parseAllKpiChartsData(csvLines) {
+        // console.log("[parseAllKpiChartsData] Memulai parsing. Jumlah baris CSV:", csvLines ? csvLines.length : 0);
+        const fpData = [];
+        const rpData = [];
+        const ppData = [];
+
+        if (!csvLines) return { fpData, rpData, ppData };
+
+        for (let i = 0; i < csvLines.length; i++) {
+          const line = csvLines[i];
           const values = line.split(",");
-          // Sheet 1: Kolom F(5):FP, G(6):RP, H(7):PP
+          
           if (values.length > 7) {
-            const fp = parseFloat(values[5]);
-            const rp = parseFloat(values[6]);
-            const pp = parseFloat(values[7]);
-            if (!isNaN(fp)) forwardPowers.push(fp);
-            if (!isNaN(rp)) reflectedPowers.push(rp);
-            if (!isNaN(pp)) percentagePowers.push(pp);
+            const dateStr = values[3] ? values[3].trim() : null;
+            const fpStr = values[5] ? values[5].trim() : null;
+            const rpStr = values[6] ? values[6].trim() : null;
+            const ppStr = values[7] ? values[7].trim() : null;
+
+            const fpVal = parseFloat(fpStr); 
+            const rpVal = parseFloat(rpStr);
+            const ppVal = parseFloat(ppStr);
+            const dateObject = parseDateFromString(dateStr);
+            
+            // if(i < 2 || i > csvLines.length - 3) { 
+            //      console.log(`[parseAllKpiChartsData] Baris ${i} Diproses: dateStr:"${dateStr}", fpStr:"${fpStr}", rpStr:"${rpStr}", ppStr:"${ppStr}" -> dateObj:${dateObject ? dateObject.toISOString() : 'null'}, fpVal:${fpVal}, rpVal:${rpVal}, ppVal:${ppVal}`);
+            // }
+
+            if (dateObject) { 
+              if (!isNaN(fpVal)) {
+                fpData.push({ date: dateStr, dateObject: dateObject, value: fpVal });
+              }
+              if (!isNaN(rpVal)) {
+                rpData.push({ date: dateStr, dateObject: dateObject, value: rpVal });
+              }
+              if (!isNaN(ppVal)) {
+                ppData.push({ date: dateStr, dateObject: dateObject, value: ppVal });
+              }
+            }
           }
         }
-        return {
-          forwardPower: getMostFrequentValue(forwardPowers),
-          reflectedPower: getMostFrequentValue(reflectedPowers),
-          percentagePower: getMostFrequentValue(percentagePowers),
-        };
+        // console.log(`[parseAllKpiChartsData] Selesai. FP: ${fpData.length}, RP: ${rpData.length}, PP: ${ppData.length} data valid.`);
+        return { fpData, rpData, ppData };
       }
 
       function parseVoltageData(csvLines) {
@@ -310,204 +336,253 @@
         if (!csvLines) return data;
         for (const line of csvLines) {
           const values = line.split(",");
-          // Sheet 2: O(14):R-N, P(15):S-N, Q(16):T-N, D(3):Local Submitted
           if (values.length > 16) {
             const dateStr = values[3] ? values[3].trim() : null;
-            data.push({
-              voltageRN: parseFloat(values[14]),
-              voltageSN: parseFloat(values[15]),
-              voltageTN: parseFloat(values[16]),
-              date: dateStr,
-              dateObject: parseDateFromString(dateStr),
-            });
+            const dateObject = parseDateFromString(dateStr);
+            if (dateObject) {
+                 data.push({
+                    voltageRN: parseFloat(values[14]),
+                    voltageSN: parseFloat(values[15]),
+                    voltageTN: parseFloat(values[16]),
+                    date: dateStr, dateObject: dateObject,
+                 });
+            }
           }
         }
         return data;
       }
 
       function parseEnvironmentData(csvLines) {
+        // console.log("[parseEnvironmentData] Memulai parsing. Jumlah baris CSV:", csvLines ? csvLines.length : 0);
         const data = [];
         if (!csvLines) return data;
-        for (const line of csvLines) {
+        for (let i = 0; i < csvLines.length; i++) {
+          const line = csvLines[i];
           const values = line.split(",");
-          // Sheet 3: F(5):Humidity, G(6):Temperature, D(3):Local Submitted
-          if (values.length > 6 && values.length > 3) {
+          if (values.length > 6) { 
             const dateStr = values[3] ? values[3].trim() : null;
-            data.push({
-              humidity: parseInt(values[5]),
-              temperature: parseFloat(values[6]),
-              date: dateStr,
-              dateObject: parseDateFromString(dateStr),
-            });
+            const humidityStr = values[5] ? values[5].trim() : null;
+            let tempStr = values[6] ? values[6].trim() : null; // Suhu dari kolom G (indeks 6)
+            
+            let humidityValue = NaN;
+            if (humidityStr) humidityValue = parseFloat(humidityStr.replace(',', '.'));
+
+            let temperatureValue = NaN;
+            if (tempStr) {
+                // Menghapus tanda kutip ganda ekstra sebelum parsing
+                tempStr = tempStr.replace(/"/g, ''); // Hapus semua tanda kutip ganda
+                temperatureValue = parseFloat(tempStr.replace(',', '.'));
+            }
+            
+            const dateObject = parseDateFromString(dateStr);
+
+            // if(i < 2 || i > csvLines.length - 3) { 
+            //      console.log(`[parseEnvironmentData] Baris ${i} Diproses: dateStr:"${dateStr}", humidityStr:"${humidityStr}", tempStr:"${tempStr}" (cleaned) -> dateObj:${dateObject ? dateObject.toISOString() : 'null'}, humidityVal:${humidityValue}, tempVal:${temperatureValue}`);
+            // }
+
+            if (dateObject && !isNaN(humidityValue) && !isNaN(temperatureValue)) {
+                 data.push({
+                    humidity: humidityValue, 
+                    temperature: temperatureValue,
+                    date: dateStr, 
+                    dateObject: dateObject,
+                 });
+            }
           }
         }
+        // console.log(`[parseEnvironmentData] Selesai. ${data.length} data valid.`);
         return data;
       }
 
-      // --- FUNGSI PENGAMBILAN DATA GENERIK ---
-      async function fetchAndParseCsv(csvUrl, parserFunction, isForAllRowsNotSliced = false) {
-        if (csvUrl.includes("YOUR_SHEET_GID")) {
-          console.warn(`URL CSV belum lengkap (periksa GID): ${csvUrl}`);
-          statusTextElement.textContent = `Error: GID untuk salah satu sheet belum diatur.`;
-          return [];
-        }
+      async function fetchAndParseCsv(csvUrl, parserFunction, sheetName = "Unknown") {
+        // console.log(`[fetchAndParseCsv] Mengambil data untuk ${sheetName} dari ${csvUrl}`);
         try {
           const response = await fetch(csvUrl + "&r=" + new Date().getTime());
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status} untuk ${csvUrl}`);
+          if (!response.ok) {
+            console.error(`[fetchAndParseCsv] HTTP error! status: ${response.status} untuk ${csvUrl} (${sheetName})`);
+            throw new Error(`HTTP error! status: ${response.status} untuk ${csvUrl}`);
+          }
           const csvText = await response.text();
+          
           const lines = csvText.trim().split("\n");
-
-          if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === "")) return [];
-
+          if (lines.length <= 1 && lines[0].trim() === "") { 
+             // console.warn(`[fetchAndParseCsv] CSV kosong atau hanya header untuk ${sheetName}.`);
+             if (parserFunction === parseAllKpiChartsData) return { fpData: [], rpData: [], ppData: [] };
+             return [];
+          }
           const dataLines = lines.slice(1);
-          if (dataLines.length === 0) return [];
-
-          // Untuk KPI (isForAllRowsNotSliced = true), parserFunction akan memproses semua dataLines.
-          // Untuk Chart (isForAllRowsNotSliced = false), parserFunction juga akan memproses semua dataLines.
-          // Penyaringan/pemotongan untuk DEFAULT_DISPLAY_POINTS akan dilakukan setelah data asli disimpan.
           return parserFunction(dataLines);
         } catch (error) {
-          console.error(`Gagal mengambil/parsing dari ${csvUrl}:`, error);
-          statusTextElement.textContent = "Gagal memuat sebagian data.";
+          // console.error(`[fetchAndParseCsv] Gagal mengambil atau parsing ${sheetName}:`, error);
+          statusTextElement.textContent = `Gagal memuat data ${sheetName}.`;
+          if (parserFunction === parseAllKpiChartsData) return { fpData: [], rpData: [], ppData: [] };
           return [];
         }
       }
 
-      // --- FUNGSI UTAMA PENGAMBILAN SEMUA DATA ---
       async function fetchAllData() {
         statusTextElement.textContent = "Mengambil data...";
         statusDotElement.classList.remove("online");
+        // console.log("[fetchAllData] Memulai pengambilan semua data...");
         try {
-          const [kpiDataResult, voltageDataFull, environmentDataFull] = await Promise.all([
-            fetchAndParseCsv(KPI_SHEET_URL, parseKpiData, true),
-            fetchAndParseCsv(VOLTAGE_SHEET_URL, parseVoltageData),
-            fetchAndParseCsv(ENVIRONMENT_SHEET_URL, parseEnvironmentData),
+          const [kpiChartsRawData, voltageDataFull, environmentDataFull] = await Promise.all([
+            fetchAndParseCsv(KPI_SHEET_URL, parseAllKpiChartsData, "KPI Charts"),
+            fetchAndParseCsv(VOLTAGE_SHEET_URL, parseVoltageData, "Voltage"),
+            fetchAndParseCsv(ENVIRONMENT_SHEET_URL, parseEnvironmentData, "Environment"),
           ]);
+          
+          // console.log("[fetchAllData] Data mentah KPI (setelah parse):", kpiChartsRawData);
+          // console.log("[fetchAllData] Data mentah Voltage (setelah parse):", voltageDataFull.length, "entri.");
+          // console.log("[fetchAllData] Data mentah Environment (setelah parse):", environmentDataFull.length, "entri.");
 
-          originalVoltageData = voltageDataFull.filter((d) => d.dateObject);
-          originalEnvironmentData = environmentDataFull.filter((d) => d.dateObject);
-
+          const sortAndFilter = (dataArray) => {
+            if (!Array.isArray(dataArray)) {
+                // console.warn("[fetchAllData] sortAndFilter: dataArray bukan array", dataArray);
+                return []; 
+            }
+            return dataArray.filter(d => d && d.dateObject && d.value !== undefined && !isNaN(d.value)).sort((a, b) => a.dateObject - b.dateObject);
+          }
+          
+          originalFpChartData = sortAndFilter(kpiChartsRawData.fpData);
+          originalRpChartData = sortAndFilter(kpiChartsRawData.rpData);
+          originalPpChartData = sortAndFilter(kpiChartsRawData.ppData);
+          
+          originalVoltageData = voltageDataFull.filter(d => d && d.dateObject).sort((a, b) => a.dateObject - b.dateObject);
+          originalEnvironmentData = environmentDataFull.filter(d => d && d.dateObject && d.temperature !== undefined && !isNaN(d.temperature) && d.humidity !== undefined && !isNaN(d.humidity)).sort((a, b) => a.dateObject - b.dateObject);
+            
+          // console.log(`[fetchAllData] Original Data (setelah filter & sort): FP:${originalFpChartData.length}, RP:${originalRpChartData.length}, PP:${originalPpChartData.length}, Volt:${originalVoltageData.length}, Env:${originalEnvironmentData.length}`);
+            
           statusDotElement.classList.add("online");
           statusTextElement.textContent = "Terhubung";
           lastUpdatedElement.textContent = `Update terakhir: ${new Date().toLocaleTimeString("id-ID")}`;
 
-          return { kpiData: kpiDataResult, voltageData: originalVoltageData, environmentData: originalEnvironmentData };
+          return { 
+            fpChartData: originalFpChartData,
+            rpChartData: originalRpChartData,
+            ppChartData: originalPpChartData,
+            voltageData: originalVoltageData, 
+            environmentData: originalEnvironmentData 
+          };
         } catch (error) {
-          console.error("Gagal mengambil semua data:", error);
+          // console.error("[fetchAllData] Gagal mengambil semua data:", error);
           statusTextElement.textContent = "Gagal memuat semua data.";
-          return { kpiData: null, voltageData: [], environmentData: [] };
+          return { fpChartData: [], rpChartData: [], ppChartData: [], voltageData: [], environmentData: [] };
         }
       }
 
-      // --- FUNGSI UPDATE UI ---
-      function updateDashboardKPIs(data) {
-        if (data) {
-          forwardPowerValueElement.innerHTML = `${data.forwardPower ?? "---"} <span class="text-xl font-medium text-gray-400">W</span>`;
-          reflectedPowerValueElement.innerHTML = `${data.reflectedPower ?? "---"} <span class="text-xl font-medium text-gray-400">W</span>`;
-          percentagePowerValueElement.innerHTML = `${data.percentagePower ?? "---"} <span class="text-xl font-medium text-gray-400">%</span>`;
-        } else {
-          forwardPowerValueElement.innerHTML = `--- <span class="text-xl font-medium text-gray-400">W</span>`;
-          reflectedPowerValueElement.innerHTML = `--- <span class="text-xl font-medium text-gray-400">W</span>`;
-          percentagePowerValueElement.innerHTML = `--- <span class="text-xl font-medium text-gray-400">%</span>`;
-        }
-      }
-
-      function updateDashboardCharts(voltData, envData) {
+      function updateSingleChart(chartInstance, chartData, label, borderColor, customBackgroundColor = null) {
         const emptyChartData = { labels: ["Tidak ada data"], datasets: [] };
+        const dataToDisplay = chartData || [];
+        
+        if (dataToDisplay.length > 0) {
+            chartInstance.data.labels = dataToDisplay.map(d => d.date);
+            chartInstance.data.datasets = [{ 
+                label: label, 
+                data: dataToDisplay.map(d => d.value), 
+                borderColor: borderColor, 
+                backgroundColor: customBackgroundColor || `${borderColor}1A`, 
+                tension: 0.3, 
+                fill: true 
+            }];
+        } else {
+            chartInstance.data = JSON.parse(JSON.stringify(emptyChartData));
+        }
+        chartInstance.update();
+      }
 
-        // Data yang akan ditampilkan di chart (bisa data asli yang dipotong, atau data hasil filter)
-        const voltDataToDisplay = voltData;
-        const envDataToDisplay = envData;
+      function updateDashboardCharts(fpData, rpData, ppData, voltData, envData) {
+        const emptyChartData = { labels: ["Tidak ada data"], datasets: [] };
+        // console.log(`[updateDashboardCharts] Menerima data untuk grafik - FP:${fpData.length}, RP:${rpData.length}, PP:${ppData.length}, Volt:${voltData.length}, Env:${envData.length}`);
 
-        if (voltDataToDisplay && voltDataToDisplay.length > 0) {
-          voltageChart.data.labels = voltDataToDisplay.map((d) => d.date);
+        updateSingleChart(forwardPowerChart, fpData, "Forward Power (W)", "#f472b6");
+        updateSingleChart(reflectedPowerChart, rpData, "Reflected Power (W)", "#f9a8d4"); 
+        updateSingleChart(percentagePowerChart, ppData, "Percentage Power (%)", "#c084fc");
+
+        const voltDataToDisplay = voltData || [];
+        if (voltDataToDisplay.length > 0) {
+          voltageChart.data.labels = voltDataToDisplay.map(d => d.date);
           voltageChart.data.datasets = [
-            { label: "R-N (V)", data: voltDataToDisplay.map((d) => d.voltageRN), borderColor: "#f87171", backgroundColor: "rgba(248,113,113,0.1)", tension: 0.3, fill: true },
-            { label: "S-N (V)", data: voltDataToDisplay.map((d) => d.voltageSN), borderColor: "#fbbf24", backgroundColor: "rgba(251,191,36,0.1)", tension: 0.3, fill: true },
-            { label: "T-N (V)", data: voltDataToDisplay.map((d) => d.voltageTN), borderColor: "#38bdf8", backgroundColor: "rgba(56,189,248,0.1)", tension: 0.3, fill: true },
+            { label: "R-N (V)", data: voltDataToDisplay.map(d => d.voltageRN), borderColor: "#f87171", backgroundColor: "rgba(248,113,113,0.1)", tension: 0.3, fill: true },
+            { label: "S-N (V)", data: voltDataToDisplay.map(d => d.voltageSN), borderColor: "#fbbf24", backgroundColor: "rgba(251,191,36,0.1)", tension: 0.3, fill: true },
+            { label: "T-N (V)", data: voltDataToDisplay.map(d => d.voltageTN), borderColor: "#38bdf8", backgroundColor: "rgba(56,189,248,0.1)", tension: 0.3, fill: true },
           ];
         } else {
           voltageChart.data = JSON.parse(JSON.stringify(emptyChartData));
         }
         voltageChart.update();
 
-        if (envDataToDisplay && envDataToDisplay.length > 0) {
-          humidityChart.data.labels = envDataToDisplay.map((d) => d.date);
-          humidityChart.data.datasets = [{ label: "Kelembapan (%)", data: envDataToDisplay.map((d) => d.humidity), borderColor: "#a78bfa", backgroundColor: "rgba(167,139,250,0.1)", tension: 0.3, fill: true }];
-          temperatureChart.data.labels = envDataToDisplay.map((d) => d.date);
-          temperatureChart.data.datasets = [{ label: "Suhu (°C)", data: envDataToDisplay.map((d) => d.temperature), borderColor: "#34d399", backgroundColor: "rgba(52,211,153,0.1)", tension: 0.3, fill: true }];
-        } else {
-          humidityChart.data = JSON.parse(JSON.stringify(emptyChartData));
-          temperatureChart.data = JSON.parse(JSON.stringify(emptyChartData));
-        }
-        humidityChart.update();
-        temperatureChart.update();
+        const envDataToDisplay = envData || [];
+        
+        const humidityChartData = envDataToDisplay.map(d => ({
+            date: d.date, dateObject: d.dateObject, value: d.humidity 
+        }));
+        updateSingleChart(humidityChart, humidityChartData, "Kelembapan (%)", "#a78bfa", "rgba(167,139,250,0.1)");
 
-        if ((voltDataToDisplay && voltDataToDisplay.length > 0) || (envDataToDisplay && envDataToDisplay.length > 0)) {
-          console.log("Grafik diperbarui!");
-        }
+        const temperatureChartData = envDataToDisplay.map(d => ({
+            date: d.date, dateObject: d.dateObject, value: d.temperature
+        }));
+        updateSingleChart(temperatureChart, temperatureChartData, "Suhu (°C)", "#34d399", "rgba(52,211,153,0.1)");
       }
 
-      // --- FUNGSI FILTER ---
       function applyFilter() {
         const startDateString = startDateFilterElement.value;
         const endDateString = endDateFilterElement.value;
 
         if (!startDateString || !endDateString) {
-          alert("Silakan pilih tanggal mulai dan tanggal selesai.");
-          return;
+          displayMessage("Silakan pilih tanggal mulai dan tanggal selesai.", true); return;
         }
-
-        const startDateParts = startDateString.split("-");
-        const endDateParts = endDateString.split("-");
-        const startDate = new Date(Date.UTC(parseInt(startDateParts[0]), parseInt(startDateParts[1]) - 1, parseInt(startDateParts[2]), 0, 0, 0));
-        const endDate = new Date(Date.UTC(parseInt(endDateParts[0]), parseInt(endDateParts[1]) - 1, parseInt(endDateParts[2]), 23, 59, 59, 999));
+        const startDate = new Date(Date.UTC(...startDateString.split('-').map((p, i) => i === 1 ? parseInt(p) - 1 : parseInt(p)), 0,0,0,0));
+        const endDate = new Date(Date.UTC(...endDateString.split('-').map((p, i) => i === 1 ? parseInt(p) - 1 : parseInt(p)), 23,59,59,999));
 
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          alert("Format tanggal filter tidak valid.");
-          return;
+          displayMessage("Format tanggal filter tidak valid.", true); return;
         }
         if (endDate < startDate) {
-          alert("Tanggal selesai tidak boleh sebelum tanggal mulai.");
-          return;
+          displayMessage("Tanggal selesai tidak boleh sebelum tanggal mulai.", true); return;
         }
+        
+        displayMessage(""); 
+        const filterByDate = (d) => d.dateObject && d.dateObject.getTime() >= startDate.getTime() && d.dateObject.getTime() <= endDate.getTime();
 
-        const filteredVoltageData = originalVoltageData.filter((d) => {
-          if (!d.dateObject) return false;
-          // Buat objek Date UTC dari dateObject untuk perbandingan yang konsisten
-          const recordDate = new Date(Date.UTC(d.dateObject.getUTCFullYear(), d.dateObject.getUTCMonth(), d.dateObject.getUTCDate()));
-          return recordDate >= startDate && recordDate <= endDate;
-        });
-
-        const filteredEnvironmentData = originalEnvironmentData.filter((d) => {
-          if (!d.dateObject) return false;
-          const recordDate = new Date(Date.UTC(d.dateObject.getUTCFullYear(), d.dateObject.getUTCMonth(), d.dateObject.getUTCDate()));
-          return recordDate >= startDate && recordDate <= endDate;
-        });
-
-        updateDashboardCharts(filteredVoltageData, filteredEnvironmentData);
+        updateDashboardCharts(
+            originalFpChartData.filter(filterByDate),
+            originalRpChartData.filter(filterByDate),
+            originalPpChartData.filter(filterByDate),
+            originalVoltageData.filter(filterByDate), 
+            originalEnvironmentData.filter(filterByDate)
+        );
       }
 
       function resetFilter() {
         startDateFilterElement.value = "";
         endDateFilterElement.value = "";
-        const initialVoltageData = originalVoltageData.slice(-DEFAULT_DISPLAY_POINTS);
-        const initialEnvironmentData = originalEnvironmentData.slice(-DEFAULT_DISPLAY_POINTS);
-        updateDashboardCharts(initialVoltageData, initialEnvironmentData);
+        displayMessage(""); 
+        updateDashboardCharts(
+            originalFpChartData.slice(-DEFAULT_DISPLAY_POINTS),
+            originalRpChartData.slice(-DEFAULT_DISPLAY_POINTS),
+            originalPpChartData.slice(-DEFAULT_DISPLAY_POINTS),
+            originalVoltageData.slice(-DEFAULT_DISPLAY_POINTS), 
+            originalEnvironmentData.slice(-DEFAULT_DISPLAY_POINTS)
+        );
       }
 
-      // --- EKSEKUSI UTAMA ---
       async function runDashboard() {
-        const { kpiData, voltageData, environmentData } = await fetchAllData();
-        updateDashboardKPIs(kpiData);
-        updateDashboardCharts(voltageData.slice(-DEFAULT_DISPLAY_POINTS), environmentData.slice(-DEFAULT_DISPLAY_POINTS));
+        // console.log("[runDashboard] Memulai pembaruan dasbor...");
+        const { fpChartData, rpChartData, ppChartData, voltageData, environmentData } = await fetchAllData();
+        updateDashboardCharts(
+            fpChartData.slice(-DEFAULT_DISPLAY_POINTS), 
+            rpChartData.slice(-DEFAULT_DISPLAY_POINTS), 
+            ppChartData.slice(-DEFAULT_DISPLAY_POINTS), 
+            voltageData.slice(-DEFAULT_DISPLAY_POINTS), 
+            environmentData.slice(-DEFAULT_DISPLAY_POINTS)
+        );
+         // console.log("[runDashboard] Pembaruan dasbor selesai.");
       }
 
       document.addEventListener("DOMContentLoaded", () => {
         initializeCharts();
-        runDashboard();
-        setInterval(runDashboard, UPDATE_INTERVAL_MS);
-
+        runDashboard(); 
+        setInterval(runDashboard, UPDATE_INTERVAL_MS); 
         applyFilterButtonElement.addEventListener("click", applyFilter);
         resetFilterButtonElement.addEventListener("click", resetFilter);
       });
